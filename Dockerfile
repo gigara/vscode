@@ -16,6 +16,9 @@ WORKDIR /app
 # Copy the pre-built output from parent directory
 COPY ../vscode-server-linux-x64/ .
 
+# copy out dir
+COPY out/ .
+
 # Expose the port the code server will run on
 EXPOSE 8080
 
