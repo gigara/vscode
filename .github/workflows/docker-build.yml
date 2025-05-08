@@ -24,8 +24,10 @@ jobs:
       - name: Install npm
         run: npm ci
 
-      - name: build vscode
-        run: npm run gulp vscode-linux-x64
+      - name: Compile source code
+        run: |
+          npm run compile
+          npm run gulp vscode-linux-x64
 
       - name: Build server
         run: |
@@ -48,13 +50,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: vscode-server-linux-x64
-          path: .build/linux/server/vscode-server-linux-x64.tar.gz
-
-      - name: Save web build output
-        uses: actions/upload-artifact@v4
-        with:
-          name: vscode-server-linux-x64-web
-          path: .build/linux/web/vscode-server-linux-x64-web.tar.gz
+          path: |
+            .build/linux/server/vscode-server-linux-x64.tar.gz
+            .build/linux/web/vscode-server-linux-x64-web.tar.gz
 
       - name: Save out build output
         uses: actions/upload-artifact@v4
