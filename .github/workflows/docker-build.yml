@@ -32,19 +32,19 @@ jobs:
       - name: Build server
         run: |
           npm run gulp vscode-reh-linux-x64-min-ci
-          mv ../vscode-reh-linux-x64 ../vscode-server-linux-x64
+          mv ../vscode-reh-linux-x64 vscode-server-linux-x64
           ARCHIVE_PATH=".build/linux/server/vscode-server-linux-x64.tar.gz"
-          UNARCHIVE_PATH="`pwd`/../vscode-server-linux-x64"
+          UNARCHIVE_PATH="`pwd`/vscode-server-linux-x64"
           mkdir -p $(dirname $ARCHIVE_PATH)
-          tar --owner=0 --group=0 -czf $ARCHIVE_PATH -C .. vscode-server-linux-x64
+          tar --owner=0 --group=0 -czf $ARCHIVE_PATH -C vscode-server-linux-x64
 
       - name: Build server
         run: |
           npm run gulp vscode-reh-web-linux-x64-min-ci
-          mv ../vscode-reh-web-linux-x64 ../vscode-server-linux-x64-web
+          mv ../vscode-reh-web-linux-x64 vscode-server-linux-x64-web
           ARCHIVE_PATH=".build/linux/web/vscode-server-linux-x64-web.tar.gz"
           mkdir -p $(dirname $ARCHIVE_PATH)
-          tar --owner=0 --group=0 -czf $ARCHIVE_PATH -C .. vscode-server-linux-x64-web
+          tar --owner=0 --group=0 -czf $ARCHIVE_PATH -C vscode-server-linux-x64-web
 
       - name: Save server build output
         uses: actions/upload-artifact@v4
@@ -73,8 +73,6 @@ jobs:
       - name: Build Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ..
-          file: ./Dockerfile
           load: true
           tags: vscode-reh-web:latest
           cache-from: type=gha
