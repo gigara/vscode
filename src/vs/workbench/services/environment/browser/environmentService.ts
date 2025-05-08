@@ -243,10 +243,16 @@ export class BrowserWorkbenchEnvironmentService implements IBrowserWorkbenchEnvi
 	get logExtensionHostCommunication(): boolean { return this.payload?.get('logExtensionHostCommunication') === 'true'; }
 
 	@memoize
-	get skipReleaseNotes(): boolean { return this.payload?.get('skipReleaseNotes') === 'true'; }
+	get skipReleaseNotes(): boolean {
+		// return this.payload?.get('skipReleaseNotes') === 'true';
+		return true;
+	}
 
 	@memoize
-	get skipWelcome(): boolean { return this.payload?.get('skipWelcome') === 'true'; }
+	get skipWelcome(): boolean {
+		// return this.payload?.get('skipWelcome') === 'true';
+		return true;
+	}
 
 	@memoize
 	get disableWorkspaceTrust(): boolean { return !this.options.enableWorkspaceTrust; }
