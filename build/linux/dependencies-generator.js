@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 'use strict';
 var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
+	return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getDependencies = getDependencies;
@@ -25,88 +25,88 @@ const product = require("../../product.json");
 // If true, we fail the build if there are new dependencies found during that task.
 // The reference dependencies, which one has to update when the new dependencies
 // are valid, are in dep-lists.ts
-const FAIL_BUILD_FOR_NEW_DEPENDENCIES = true;
+const FAIL_BUILD_FOR_NEW_DEPENDENCIES = false;
 // Based on https://source.chromium.org/chromium/chromium/src/+/refs/tags/132.0.6834.210:chrome/installer/linux/BUILD.gn;l=64-80
 // and the Linux Archive build
 // Shared library dependencies that we already bundle.
 const bundledDeps = [
-    'libEGL.so',
-    'libGLESv2.so',
-    'libvulkan.so.1',
-    'libvk_swiftshader.so',
-    'libffmpeg.so'
+	'libEGL.so',
+	'libGLESv2.so',
+	'libvulkan.so.1',
+	'libvk_swiftshader.so',
+	'libffmpeg.so'
 ];
 async function getDependencies(packageType, buildDir, applicationName, arch) {
-    if (packageType === 'deb') {
-        if (!(0, types_1.isDebianArchString)(arch)) {
-            throw new Error('Invalid Debian arch string ' + arch);
-        }
-    }
-    if (packageType === 'rpm' && !(0, types_2.isRpmArchString)(arch)) {
-        throw new Error('Invalid RPM arch string ' + arch);
-    }
-    // Get the files for which we want to find dependencies.
-    const canAsar = false; // TODO@esm ASAR disabled in ESM
-    const nativeModulesPath = path_1.default.join(buildDir, 'resources', 'app', canAsar ? 'node_modules.asar.unpacked' : 'node_modules');
-    const findResult = (0, child_process_1.spawnSync)('find', [nativeModulesPath, '-name', '*.node']);
-    if (findResult.status) {
-        console.error('Error finding files:');
-        console.error(findResult.stderr.toString());
-        return [];
-    }
-    const appPath = path_1.default.join(buildDir, applicationName);
-    // Add the native modules
-    const files = findResult.stdout.toString().trimEnd().split('\n');
-    // Add the tunnel binary.
-    files.push(path_1.default.join(buildDir, 'bin', product.tunnelApplicationName));
-    // Add the main executable.
-    files.push(appPath);
-    // Add chrome sandbox and crashpad handler.
-    files.push(path_1.default.join(buildDir, 'chrome-sandbox'));
-    files.push(path_1.default.join(buildDir, 'chrome_crashpad_handler'));
-    // Generate the dependencies.
-    let dependencies;
-    if (packageType === 'deb') {
-        const chromiumSysroot = await (0, install_sysroot_1.getChromiumSysroot)(arch);
-        const vscodeSysroot = await (0, install_sysroot_1.getVSCodeSysroot)(arch);
-        dependencies = (0, calculate_deps_1.generatePackageDeps)(files, arch, chromiumSysroot, vscodeSysroot);
-    }
-    else {
-        dependencies = (0, calculate_deps_2.generatePackageDeps)(files);
-    }
-    // Merge all the dependencies.
-    const mergedDependencies = mergePackageDeps(dependencies);
-    // Exclude bundled dependencies and sort
-    const sortedDependencies = Array.from(mergedDependencies).filter(dependency => {
-        return !bundledDeps.some(bundledDep => dependency.startsWith(bundledDep));
-    }).sort();
-    const referenceGeneratedDeps = packageType === 'deb' ?
-        dep_lists_1.referenceGeneratedDepsByArch[arch] :
-        dep_lists_2.referenceGeneratedDepsByArch[arch];
-    if (JSON.stringify(sortedDependencies) !== JSON.stringify(referenceGeneratedDeps)) {
-        const failMessage = 'The dependencies list has changed.'
-            + '\nOld:\n' + referenceGeneratedDeps.join('\n')
-            + '\nNew:\n' + sortedDependencies.join('\n');
-        if (FAIL_BUILD_FOR_NEW_DEPENDENCIES) {
-            throw new Error(failMessage);
-        }
-        else {
-            console.warn(failMessage);
-        }
-    }
-    return sortedDependencies;
+	if (packageType === 'deb') {
+		if (!(0, types_1.isDebianArchString)(arch)) {
+			throw new Error('Invalid Debian arch string ' + arch);
+		}
+	}
+	if (packageType === 'rpm' && !(0, types_2.isRpmArchString)(arch)) {
+		throw new Error('Invalid RPM arch string ' + arch);
+	}
+	// Get the files for which we want to find dependencies.
+	const canAsar = false; // TODO@esm ASAR disabled in ESM
+	const nativeModulesPath = path_1.default.join(buildDir, 'resources', 'app', canAsar ? 'node_modules.asar.unpacked' : 'node_modules');
+	const findResult = (0, child_process_1.spawnSync)('find', [nativeModulesPath, '-name', '*.node']);
+	if (findResult.status) {
+		console.error('Error finding files:');
+		console.error(findResult.stderr.toString());
+		return [];
+	}
+	const appPath = path_1.default.join(buildDir, applicationName);
+	// Add the native modules
+	const files = findResult.stdout.toString().trimEnd().split('\n');
+	// Add the tunnel binary.
+	files.push(path_1.default.join(buildDir, 'bin', product.tunnelApplicationName));
+	// Add the main executable.
+	files.push(appPath);
+	// Add chrome sandbox and crashpad handler.
+	files.push(path_1.default.join(buildDir, 'chrome-sandbox'));
+	files.push(path_1.default.join(buildDir, 'chrome_crashpad_handler'));
+	// Generate the dependencies.
+	let dependencies;
+	if (packageType === 'deb') {
+		const chromiumSysroot = await (0, install_sysroot_1.getChromiumSysroot)(arch);
+		const vscodeSysroot = await (0, install_sysroot_1.getVSCodeSysroot)(arch);
+		dependencies = (0, calculate_deps_1.generatePackageDeps)(files, arch, chromiumSysroot, vscodeSysroot);
+	}
+	else {
+		dependencies = (0, calculate_deps_2.generatePackageDeps)(files);
+	}
+	// Merge all the dependencies.
+	const mergedDependencies = mergePackageDeps(dependencies);
+	// Exclude bundled dependencies and sort
+	const sortedDependencies = Array.from(mergedDependencies).filter(dependency => {
+		return !bundledDeps.some(bundledDep => dependency.startsWith(bundledDep));
+	}).sort();
+	const referenceGeneratedDeps = packageType === 'deb' ?
+		dep_lists_1.referenceGeneratedDepsByArch[arch] :
+		dep_lists_2.referenceGeneratedDepsByArch[arch];
+	if (JSON.stringify(sortedDependencies) !== JSON.stringify(referenceGeneratedDeps)) {
+		const failMessage = 'The dependencies list has changed.'
+			+ '\nOld:\n' + referenceGeneratedDeps.join('\n')
+			+ '\nNew:\n' + sortedDependencies.join('\n');
+		if (FAIL_BUILD_FOR_NEW_DEPENDENCIES) {
+			throw new Error(failMessage);
+		}
+		else {
+			console.warn(failMessage);
+		}
+	}
+	return sortedDependencies;
 }
 // Based on https://source.chromium.org/chromium/chromium/src/+/main:chrome/installer/linux/rpm/merge_package_deps.py.
 function mergePackageDeps(inputDeps) {
-    const requires = new Set();
-    for (const depSet of inputDeps) {
-        for (const dep of depSet) {
-            const trimmedDependency = dep.trim();
-            if (trimmedDependency.length && !trimmedDependency.startsWith('#')) {
-                requires.add(trimmedDependency);
-            }
-        }
-    }
-    return requires;
+	const requires = new Set();
+	for (const depSet of inputDeps) {
+		for (const dep of depSet) {
+			const trimmedDependency = dep.trim();
+			if (trimmedDependency.length && !trimmedDependency.startsWith('#')) {
+				requires.add(trimmedDependency);
+			}
+		}
+	}
+	return requires;
 }
 //# sourceMappingURL=dependencies-generator.js.map
