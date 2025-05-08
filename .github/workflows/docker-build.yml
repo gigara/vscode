@@ -31,7 +31,7 @@ jobs:
 
       - name: Build server
         run: |
-          npm run gulp vscode-reh-linux-x64-min-ci
+          npm run gulp vscode-reh-linux-x64
           mv ../vscode-reh-linux-x64 vscode-server-linux-x64
           ARCHIVE_PATH=".build/linux/server/vscode-server-linux-x64.tar.gz"
           mkdir -p $(dirname $ARCHIVE_PATH)
@@ -39,7 +39,7 @@ jobs:
 
       - name: Build server (web)
         run: |
-          npm run gulp vscode-reh-web-linux-x64-min-ci
+          npm run gulp vscode-reh-web-linux-x64
           mv ../vscode-reh-web-linux-x64 vscode-server-linux-x64-web
           ARCHIVE_PATH=".build/linux/web/vscode-server-linux-x64-web.tar.gz"
           mkdir -p $(dirname $ARCHIVE_PATH)
