@@ -44,15 +44,30 @@ jobs:
           mkdir -p $(dirname $ARCHIVE_PATH)
           tar --owner=0 --group=0 -czf $ARCHIVE_PATH -C .. vscode-server-linux-x64-web
 
-      - name: Save build output
+      - name: Save server build output
         uses: actions/upload-artifact@v4
         with:
           name: vscode-server-linux-x64
-          path: |
-            .build/linux/server/vscode-server-linux-x64.tar.gz
-            .build/linux/web/vscode-server-linux-x64-web.tar.gz
-            out
-            out-build
+          path: .build/linux/server/vscode-server-linux-x64.tar.gz
+
+      - name: Save web build output
+        uses: actions/upload-artifact@v4
+        with:
+          name: vscode-server-linux-x64-web
+          path: .build/linux/web/vscode-server-linux-x64-web.tar.gz
+
+      - name: Save out build output
+        uses: actions/upload-artifact@v4
+        with:
+          name: out
+          include-hidden-files: true
+          path: out
+
+      - name: Save out-build output
+        uses: actions/upload-artifact@v4
+        with:
+          name: out-build
+          path: out-build
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -68,7 +83,12 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Save Docker image
+        run: |
+          docker save vscode-reh-web:latest > /tmp/vscode-reh-web.tar
+          zip vscode-reh-web.zip /tmp/vscode-reh-web.tar
+
+      - name: Upload Docker image
         uses: actions/upload-artifact@v4
         with:
           name: docker-image
-          path: /tmp/vscode-reh-web.tar
+          path: vscode-reh-web.zip
