@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 node:20-slim
+FROM node:20-slim
 
 # Install deps
 RUN apt-get update && apt-get install -y \
@@ -14,10 +14,10 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Copy the pre-built output from parent directory
-COPY ../vscode-server-linux-x64/ .
+COPY vscode-server-linux-x64/ .
 
 # copy out dir
-COPY out/ .
+COPY out/ out/
 
 # Expose the port the code server will run on
 EXPOSE 8080
