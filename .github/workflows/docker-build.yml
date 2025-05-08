@@ -1,0 +1,65 @@
+name: Build and Package
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build server
+        run: |
+          npm run gulp vscode-reh-linux-x64-min-ci
+          mv ../vscode-reh-linux-x64 ../vscode-server-linux-x64
+          ARCHIVE_PATH=".build/linux/server/vscode-server-linux-x64.tar.gz"
+          UNARCHIVE_PATH="`pwd`/../vscode-server-linux-x64"
+          mkdir -p $(dirname $ARCHIVE_PATH)
+          tar --owner=0 --group=0 -czf $ARCHIVE_PATH -C .. vscode-server-linux-x64
+
+      - name: Build server
+        run: |
+          npm run gulp vscode-reh-web-linux-x64-min-ci
+          mv ../vscode-reh-web-linux-x64 ../vscode-server-linux-x64-web
+          ARCHIVE_PATH=".build/linux/web/vscode-server-linux-x64-web.tar.gz"
+          mkdir -p $(dirname $ARCHIVE_PATH)
+          tar --owner=0 --group=0 -czf $ARCHIVE_PATH -C .. vscode-server-linux-x64-web
+
+      - name: Save build output
+        uses: actions/upload-artifact@v4
+        with:
+          name: vscode-server-linux-x64
+          path: |
+            .build/linux/server/vscode-server-linux-x64.tar.gz
+            .build/linux/web/vscode-server-linux-x64-web.tar.gz
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          load: true
+          tags: vscode-reh-web:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Save Docker image
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: /tmp/vscode-reh-web.tar
