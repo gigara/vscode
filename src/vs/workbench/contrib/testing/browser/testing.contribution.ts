@@ -75,7 +75,7 @@ const viewContainer = Registry.as<IViewContainersRegistry>(ViewContainerExtensio
 		order: 4,
 	},
 	hideIfEmpty: true,
-}, ViewContainerLocation.Sidebar);
+}, ViewContainerLocation.AuxiliaryBar);
 
 
 const testResultsViewContainer = Registry.as<IViewContainersRegistry>(ViewContainerExtensions.ViewContainersRegistry).registerViewContainer({

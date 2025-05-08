@@ -123,7 +123,7 @@ Registry.as<IViewContainersRegistry>(ViewContainerExtensions.ViewContainersRegis
 		order: 4,
 		rejectAddedViews: true,
 		alwaysUseContainerInfo: true,
-	}, ViewContainerLocation.Sidebar);
+	}, ViewContainerLocation.AuxiliaryBar);
 
 Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration)
 	.registerConfiguration({
