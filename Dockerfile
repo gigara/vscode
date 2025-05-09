@@ -60,8 +60,5 @@ RUN mkdir -p /opt/project-template \
 # Expose the port the code server will run on
 EXPOSE 8080
 
-# Explicitly set the user to 10500
-USER 10500
-
 # Start the server
-CMD ["./bin/code-server-devant", "--host", "0.0.0.0", "--port", "8080", "--default-folder", "/opt/project-template", "--connection-token", "giga"]
+CMD ["./bin/code-server-devant", "--host", "0.0.0.0", "--port", "8080", "--default-folder", "/opt/project-template", "--connection-token", "giga", "--disable-workspace-trust"]
