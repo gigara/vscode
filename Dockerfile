@@ -29,7 +29,7 @@ RUN cd source && \
 RUN rm -rf source
 
 # move the built output to the working directory
-RUN cp -a vscode-reh-web-linux-x64/. . \
+RUN cp -a vscode-reh-web-linux-x64/. . && \
     rm -r vscode-reh-web-linux-x64
 
 # Download Ballerina
