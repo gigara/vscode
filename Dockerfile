@@ -9,7 +9,9 @@ RUN apt-get update && apt-get install -y \
     libsecret-1-dev \
     libkrb5-dev \
     python-is-python3 \
-    git
+    git \
+    curl \
+    tar
 
 # Set working directory
 WORKDIR /app
