@@ -8,13 +8,28 @@ RUN apt-get update && apt-get install -y \
     libxkbfile-dev \
     libsecret-1-dev \
     libkrb5-dev \
-    python-is-python3
+    python-is-python3 \
+    git
 
 # Set working directory
 WORKDIR /app
 
-# Copy the pre-built output from parent directory
-COPY vscode-server-linux-x64-web/ .
+# Copy source
+COPY . source/
+
+# Install dependencies
+RUN cd source && \
+    npm ci
+
+# Build the project
+RUN cd source && \
+    npm run gulp vscode-reh-web-linux-x64
+
+# Delete source
+RUN rm -rf source
+
+# move the built output to the working directory
+RUN mv vscode-reh-web-linux-x64/ ./
 
 # Expose the port the code server will run on
 EXPOSE 8080
