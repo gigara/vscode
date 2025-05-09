@@ -21,18 +21,13 @@ jobs:
         with:
           context: .
           file: Dockerfile
-          load: true
           tags: devant-editor:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-      - name: Save Docker image
-        run: |
-          docker save devant-editor:latest > /tmp/devant-editor.tar
-          zip devant-editor.zip /tmp/devant-editor.tar
+          outputs: type=docker,dest=${{ runner.temp }}/devant-editor.tar
 
       - name: Upload Docker image
         uses: actions/upload-artifact@v4
         with:
           name: docker-image
-          path: devant-editor.zip
+          path: ${{ runner.temp }}/devant-editor.tar
