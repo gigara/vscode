@@ -24,19 +24,6 @@ jobs:
       - name: Install npm
         run: npm ci
 
-      - name: Compile source code
-        run: |
-          npm run compile
-          npm run gulp vscode-linux-x64
-
-      - name: Build server
-        run: |
-          npm run gulp vscode-reh-linux-x64
-          mv ../vscode-reh-linux-x64 vscode-server-linux-x64
-          ARCHIVE_PATH=".build/linux/server/vscode-server-linux-x64.tar.gz"
-          mkdir -p $(dirname $ARCHIVE_PATH)
-          tar --owner=0 --group=0 -czf $ARCHIVE_PATH vscode-server-linux-x64
-
       - name: Build server (web)
         run: |
           npm run gulp vscode-reh-web-linux-x64
@@ -50,21 +37,7 @@ jobs:
         with:
           name: vscode-server-linux-x64
           path: |
-            .build/linux/server/vscode-server-linux-x64.tar.gz
             .build/linux/web/vscode-server-linux-x64-web.tar.gz
-
-      - name: Save out build output
-        uses: actions/upload-artifact@v4
-        with:
-          name: out
-          include-hidden-files: true
-          path: out
-
-      - name: Save out-build output
-        uses: actions/upload-artifact@v4
-        with:
-          name: out-build
-          path: out-build
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
