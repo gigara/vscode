@@ -27,7 +27,7 @@ jobs:
         with:
           context: .
           file: Dockerfile
-          tags: devant-editor:latest
+          tags: gigara/devant-editor:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
           outputs: type=docker,dest=${{ runner.temp }}/devant-editor.tar
