@@ -25,7 +25,7 @@ RUN cd source && \
 
 # Build the project
 RUN cd source && \
-    npm run gulp vscode-reh-web-linux-x64-min
+    npm run gulp vscode-reh-web-linux-x64-min-ci
 
 # Delete source
 RUN rm -rf source
