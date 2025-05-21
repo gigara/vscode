@@ -288,7 +288,7 @@ export class WebClientServer {
 		let remoteAuthority = (
 			useTestResolver
 				? 'test+test'
-				: (getFirstHeader('x-original-host') || getFirstHeader('x-forwarded-host') || req.headers.host)
+				: process.env.HOST || (getFirstHeader('x-original-host') || getFirstHeader('x-forwarded-host') || req.headers.host)
 		);
 		if (!remoteAuthority) {
 			return serveError(req, res, 400, `Bad request.`);
