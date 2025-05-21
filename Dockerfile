@@ -65,4 +65,4 @@ EXPOSE 8080
 ENV HOST="localhost:8080"
 
 # Start the server
-CMD ["./bin/code-server-devant", "--port", "8080", "--default-folder", "/opt/project-template", "--connection-token", "giga", "--disable-workspace-trust"]
+CMD ["./bin/code-server-devant", "--host", "0.0.0.0", "--port", "8080", "--default-folder", "/opt/project-template", "--connection-token", "giga", "--disable-workspace-trust"]
