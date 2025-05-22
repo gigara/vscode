@@ -26,9 +26,13 @@ RUN cd source && \
 # Build the project
 RUN cd source && \
     npm run compile-build && \
-    npm run download-builtin-extensions && \
     npm run minify-vscode-reh-web && \
-    npm run gulp vscode-reh-web-linux-x64-min-ci
+    npm run gulp vscode-reh-web-linux-x64-min-ci && \
+    npm run download-builtin-extensions
+
+# Copy extensions
+RUN mkdir -p /root/.vscode-server-devant/extensions && \
+    cp -a source/.build/builtInExtensions/. /root/.vscode-server-devant/extensions
 
 # Delete source
 RUN rm -rf source
@@ -57,7 +61,7 @@ ENV PATH=$JAVA_HOME/bin:$PATH
 # Create a sample project with Ballerina
 RUN mkdir -p /opt/project-template \
     && git clone https://github.com/gigara/ballerina-integrator-empty-proj.git /tmp/ballerina-integrator-empty-proj \
-    && cp -r /tmp/ballerina-integrator-empty-proj/1.0.0/* /opt/project-template/ \
+    && cp -a /tmp/ballerina-integrator-empty-proj/1.0.0/. /opt/project-template/ \
     && rm -rf /tmp/ballerina-integrator-empty-proj
 
 # Expose the port the code server will run on
@@ -66,4 +70,7 @@ EXPOSE 8081
 ENV HOST="localhost:8081"
 
 # Start the server
-CMD ["./bin/code-server-devant", "--host", "0.0.0.0", "--port", "8081", "--default-folder", "/opt/project-template", "--connection-token", "giga", "--disable-workspace-trust"]
+CMD ["/app/bin/code-server-devant", "--host", "0.0.0.0", "--port", "8081", "--default-folder", "/opt/project-template", "--connection-token", "giga", "--disable-workspace-trust", "--extensions-dir", "/root/.vscode-server-devant/extensions"]
+
+# Set the working directory
+WORKDIR /opt/project-template
