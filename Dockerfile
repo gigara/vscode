@@ -26,7 +26,7 @@ RUN cd source && \
 # Build the project
 RUN cd source && \
     npm run compile-build && \
-    npm run minify-vscode-reh-web && \
+    node build/lib/builtInExtensions.js && \
     npm run gulp vscode-reh-web-linux-x64-min-ci
 
 # Delete source
