@@ -26,7 +26,8 @@ RUN cd source && \
 # Build the project
 RUN cd source && \
     npm run compile-build && \
-    node build/lib/builtInExtensions.js && \
+    npm run download-builtin-extensions && \
+    npm run minify-vscode-reh-web && \
     npm run gulp vscode-reh-web-linux-x64-min-ci
 
 # Delete source
@@ -60,9 +61,9 @@ RUN mkdir -p /opt/project-template \
     && rm -rf /tmp/ballerina-integrator-empty-proj
 
 # Expose the port the code server will run on
-EXPOSE 8080
+EXPOSE 8081
 
-ENV HOST="localhost:8080"
+ENV HOST="localhost:8081"
 
 # Start the server
-CMD ["./bin/code-server-devant", "--host", "0.0.0.0", "--port", "8080", "--default-folder", "/opt/project-template", "--connection-token", "giga", "--disable-workspace-trust"]
+CMD ["./bin/code-server-devant", "--host", "0.0.0.0", "--port", "8081", "--default-folder", "/opt/project-template", "--connection-token", "giga", "--disable-workspace-trust"]

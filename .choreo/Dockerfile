@@ -1,5 +1,5 @@
 FROM gigara/devant-editor
 
-EXPOSE 8080
+EXPOSE 8081
 
 USER 10500
