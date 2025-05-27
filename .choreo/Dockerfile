@@ -17,6 +17,12 @@ RUN mkdir -p /home/.vscode-server-devant/extensions && \
 	cp -a /root/.vscode-server-devant/extensions/* /home/.vscode-server-devant/extensions/
 RUN chown -R 10500:10500 /home/.vscode-server-devant/extensions/
 
+# install dependencies
+RUN apt-get update && apt-get install -y \
+	procps \
+	lsof \
+	&& rm -rf /var/lib/apt/lists/*
+
 EXPOSE 8081
 USER 10500
 
