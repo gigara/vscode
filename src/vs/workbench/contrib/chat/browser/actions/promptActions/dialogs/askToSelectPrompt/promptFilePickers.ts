@@ -5,22 +5,25 @@
 
 import { localize } from '../../../../../../../../nls.js';
 import { URI } from '../../../../../../../../base/common/uri.js';
-import { OS } from '../../../../../../../../base/common/platform.js';
 import { assert } from '../../../../../../../../base/common/assert.js';
 import { Codicon } from '../../../../../../../../base/common/codicons.js';
 import { WithUriValue } from '../../../../../../../../base/common/types.js';
 import { ThemeIcon } from '../../../../../../../../base/common/themables.js';
-import { IPromptPath } from '../../../../../common/promptSyntax/service/types.js';
-import { dirname, extUri } from '../../../../../../../../base/common/resources.js';
+import { IPromptPath, IPromptsService } from '../../../../../common/promptSyntax/service/types.js';
+import { dirname, extUri, joinPath } from '../../../../../../../../base/common/resources.js';
 import { DisposableStore } from '../../../../../../../../base/common/lifecycle.js';
 import { IFileService } from '../../../../../../../../platform/files/common/files.js';
 import { ILabelService } from '../../../../../../../../platform/label/common/label.js';
 import { IOpenerService } from '../../../../../../../../platform/opener/common/opener.js';
-import { UILabelProvider } from '../../../../../../../../base/common/keybindingLabels.js';
 import { IDialogService } from '../../../../../../../../platform/dialogs/common/dialogs.js';
-import { getCleanPromptName } from '../../../../../../../../platform/prompts/common/constants.js';
-import { INSTRUCTIONS_DOCUMENTATION_URL, PROMPT_DOCUMENTATION_URL } from '../../../../../common/promptSyntax/constants.js';
+import { ICommandService } from '../../../../../../../../platform/commands/common/commands.js';
+import { getCleanPromptName, PromptsType } from '../../../../../../../../platform/prompts/common/prompts.js';
+import { INSTRUCTIONS_DOCUMENTATION_URL, MODE_DOCUMENTATION_URL, PROMPT_DOCUMENTATION_URL } from '../../../../../common/promptSyntax/constants.js';
+import { NEW_PROMPT_COMMAND_ID, NEW_INSTRUCTIONS_COMMAND_ID, NEW_MODE_COMMAND_ID } from '../../../../promptSyntax/contributions/createPromptCommand/createPromptCommand.js';
 import { IKeyMods, IQuickInputButton, IQuickInputService, IQuickPick, IQuickPickItem, IQuickPickItemButtonEvent } from '../../../../../../../../platform/quickinput/common/quickInput.js';
+import { askForPromptFileName } from '../../../../promptSyntax/contributions/createPromptCommand/dialogs/askForPromptName.js';
+import { IInstantiationService } from '../../../../../../../../platform/instantiation/common/instantiation.js';
+import { CancellationToken } from '../../../../../../../../base/common/cancellation.js';
 
 /**
  * Options for the {@link askToSelectInstructions} function.
@@ -39,10 +42,12 @@ export interface ISelectOptions {
 	 */
 	readonly resource?: URI;
 
-	/**
-	 * List of prompt files to show in the selection dialog.
-	 */
-	readonly promptFiles: readonly IPromptPath[];
+	readonly type: PromptsType;
+
+	readonly optionNew?: boolean;
+	readonly optionEdit?: boolean;
+	readonly optionDelete?: boolean;
+	readonly optionRename?: boolean;
 }
 
 export interface ISelectPromptResult {
@@ -58,31 +63,71 @@ export interface ISelectPromptResult {
 }
 
 /**
- * A special quick pick item that links to the documentation of prompt file.
+ * Button that opems the documentation.
  */
-const PROMPT_DOCS_OPTION: WithUriValue<IQuickPickItem> = Object.freeze({
+const HELP_BUTTON: IQuickInputButton = Object.freeze({
+	tooltip: localize('help', "Help"),
+	iconClass: ThemeIcon.asClassName(Codicon.question),
+});
+
+interface IPromptPickerQuickPickItem extends IQuickPickItem {
+	/**
+	 * The command ID to execute when the item is selected.
+	 */
+	commandId?: string;
+
+	/**
+	 * The URU of the prompt file or the documentation to open.
+	 */
+	value: URI;
+}
+
+/**
+ * A quick pick item that starts the 'New Prompt File' command.
+ */
+const NEW_PROMPT_FILE_OPTION: IPromptPickerQuickPickItem = Object.freeze({
 	type: 'item',
-	label: localize(
-		'commands.prompts.use.select-dialog.docs-label',
-		'Learn how to create reusable prompts',
-	),
-	description: PROMPT_DOCUMENTATION_URL,
-	tooltip: PROMPT_DOCUMENTATION_URL,
+	label: `$(plus) ${localize(
+		'commands.new-promptfile.select-dialog.label',
+		'New prompt file...'
+	)}`,
 	value: URI.parse(PROMPT_DOCUMENTATION_URL),
+	pickable: false,
+	alwaysShow: true,
+	buttons: [HELP_BUTTON],
+	commandId: NEW_PROMPT_COMMAND_ID,
 });
 
 /**
- * A special quick pick item that links to the custom instructions documentation.
+ * A quick pick item that starts the 'New Instructions File' command.
  */
-const INSTRUCTIONS_DOCS_OPTION: WithUriValue<IQuickPickItem> = Object.freeze({
+const NEW_INSTRUCTIONS_FILE_OPTION: IPromptPickerQuickPickItem = Object.freeze({
 	type: 'item',
-	label: localize(
-		'commands.instructions.use.select-dialog.docs-label',
-		'Learn how to create custom instructions',
-	),
-	description: INSTRUCTIONS_DOCUMENTATION_URL,
-	tooltip: INSTRUCTIONS_DOCUMENTATION_URL,
+	label: `$(plus) ${localize(
+		'commands.new-instructionsfile.select-dialog.label',
+		'Create new instruction file...',
+	)}`,
 	value: URI.parse(INSTRUCTIONS_DOCUMENTATION_URL),
+	pickable: false,
+	alwaysShow: true,
+	buttons: [HELP_BUTTON],
+	commandId: NEW_INSTRUCTIONS_COMMAND_ID,
+});
+
+/**
+ * A quick pick item that starts the 'New Instructions File' command.
+ */
+const NEW_MODE_FILE_OPTION: IPromptPickerQuickPickItem = Object.freeze({
+	type: 'item',
+	label: `$(plus) ${localize(
+		'commands.new-modefile.select-dialog.label',
+		'Create new custom chat mode file...',
+	)}`,
+	value: URI.parse(MODE_DOCUMENTATION_URL),
+	pickable: false,
+	alwaysShow: true,
+	buttons: [HELP_BUTTON],
+	commandId: NEW_MODE_COMMAND_ID,
 });
 
 
@@ -90,11 +135,7 @@ const INSTRUCTIONS_DOCS_OPTION: WithUriValue<IQuickPickItem> = Object.freeze({
  * Button that opens a prompt file in the editor.
  */
 const EDIT_BUTTON: IQuickInputButton = Object.freeze({
-	tooltip: localize(
-		'commands.prompts.use.select-dialog.open-button.tooltip',
-		"edit ({0}-key + enter)",
-		UILabelProvider.modifierLabels[OS].ctrlKey
-	),
+	tooltip: localize('open', "Open in Editor"),
 	iconClass: ThemeIcon.asClassName(Codicon.edit),
 });
 
@@ -102,10 +143,17 @@ const EDIT_BUTTON: IQuickInputButton = Object.freeze({
  * Button that deletes a prompt file.
  */
 const DELETE_BUTTON: IQuickInputButton = Object.freeze({
-	tooltip: localize('delete', "delete"),
+	tooltip: localize('delete', "Delete"),
 	iconClass: ThemeIcon.asClassName(Codicon.trash),
 });
 
+/**
+ * Button that renames a prompt file.
+ */
+const RENAME_BUTTON: IQuickInputButton = Object.freeze({
+	tooltip: localize('rename', "Rename"),
+	iconClass: ThemeIcon.asClassName(Codicon.pencil),
+});
 
 export class PromptFilePickers {
 	constructor(
@@ -114,99 +162,32 @@ export class PromptFilePickers {
 		@IOpenerService private readonly _openerService: IOpenerService,
 		@IFileService private readonly _fileService: IFileService,
 		@IDialogService private readonly _dialogService: IDialogService,
+		@ICommandService private readonly _commandService: ICommandService,
+		@IInstantiationService private readonly _instaService: IInstantiationService,
+		@IPromptsService private readonly _promptsService: IPromptsService,
 	) {
 	}
+
 	/**
-	 * Shows the instructions selection dialog to the user that allows to select a instructions file(s).
+	 * Shows the prompt file selection dialog to the user that allows to run a prompt file(s).
 	 *
 	 * If {@link ISelectOptions.resource resource} is provided, the dialog will have
 	 * the resource pre-selected in the prompts list.
 	 */
-	public async selectInstructionsFiles(options: ISelectOptions): Promise<URI[] | undefined> {
-
-		const fileOptions = this._createPromptPickItems(options);
-
-		const hasMultipleEntries = fileOptions.length > 1;
-		if (!hasMultipleEntries) {
-			fileOptions.push(INSTRUCTIONS_DOCS_OPTION);
+	async selectPromptFile(options: ISelectOptions): Promise<ISelectPromptResult | undefined> {
+		const quickPick = this._quickInputService.createQuickPick<IPromptPickerQuickPickItem>();
+		quickPick.busy = true;
+		try {
+			const fileOptions = await this._createPromptPickItems(options);
+			const activeItem = options.resource && fileOptions.find(f => extUri.isEqual(f.value, options.resource));
+			quickPick.activeItems = [activeItem ?? fileOptions[0]];
+			quickPick.placeholder = options.placeholder;
+			quickPick.canAcceptInBackground = true;
+			quickPick.matchOnDescription = true;
+			quickPick.items = fileOptions;
+		} finally {
+			quickPick.busy = false;
 		}
-
-		const quickPick = this._quickInputService.createQuickPick<WithUriValue<IQuickPickItem>>();
-		quickPick.activeItems = fileOptions.length ? [fileOptions[0]] : [];
-		quickPick.placeholder = options.placeholder;
-		quickPick.canAcceptInBackground = true;
-		quickPick.matchOnDescription = true;
-		quickPick.items = fileOptions;
-		quickPick.canSelectMany = hasMultipleEntries;
-
-		return new Promise<URI[] | undefined>(resolve => {
-			const disposables = new DisposableStore();
-
-			let isResolved = false;
-
-			// then the dialog is hidden or disposed for other reason,
-			// dispose everything and resolve the main promise
-			disposables.add({
-				dispose() {
-					quickPick.dispose();
-					if (!isResolved) {
-						resolve(undefined);
-						isResolved = true;
-					}
-				},
-			});
-
-			// handle the prompt `accept` event
-			disposables.add(quickPick.onDidAccept(async (event) => {
-				const { selectedItems } = quickPick;
-
-				if (!hasMultipleEntries && selectedItems[0] === INSTRUCTIONS_DOCS_OPTION) {
-					await this._openerService.open(selectedItems[0].value);
-					return;
-				}
-
-				resolve(selectedItems.map(item => item.value));
-				isResolved = true;
-
-				// if user submitted their selection, close the dialog
-				if (!event.inBackground) {
-					disposables.dispose();
-				}
-			}));
-
-			// handle the `button click` event on a list item (edit, delete, etc.)
-			disposables.add(quickPick.onDidTriggerItemButton(
-				e => this._handleButtonClick(quickPick, e))
-			);
-
-			// when the dialog is hidden, dispose everything
-			disposables.add(quickPick.onDidHide(
-				disposables.dispose.bind(disposables),
-			));
-
-			// finally, reveal the dialog
-			quickPick.show();
-		});
-	}
-
-	/**
-	 * Shows the instructions selection dialog to the user that allows to select a instructions file(s).
-	 *
-	 * If {@link ISelectOptions.resource resource} is provided, the dialog will have
-	 * the resource pre-selected in the prompts list.
-	 */
-	public async selectPromptFile(options: ISelectOptions): Promise<ISelectPromptResult | undefined> {
-
-		const fileOptions = this._createPromptPickItems(options);
-		fileOptions.push(PROMPT_DOCS_OPTION);
-
-		// otherwise show the prompt file selection dialog
-		const quickPick = this._quickInputService.createQuickPick<WithUriValue<IQuickPickItem>>();
-		quickPick.activeItems = fileOptions.length ? [fileOptions[0]] : [];
-		quickPick.placeholder = options.placeholder;
-		quickPick.canAcceptInBackground = true;
-		quickPick.matchOnDescription = true;
-		quickPick.items = fileOptions;
 
 		return new Promise<ISelectPromptResult | undefined>(resolve => {
 			const disposables = new DisposableStore();
@@ -231,8 +212,8 @@ export class PromptFilePickers {
 				const { keyMods } = quickPick;
 
 				const selectedItem = selectedItems[0];
-				if (selectedItem === PROMPT_DOCS_OPTION) {
-					await this._openerService.open(selectedItem.value);
+				if (selectedItem.commandId) {
+					await this._commandService.executeCommand(selectedItem.commandId);
 					return;
 				}
 
@@ -249,7 +230,7 @@ export class PromptFilePickers {
 
 			// handle the `button click` event on a list item (edit, delete, etc.)
 			disposables.add(quickPick.onDidTriggerItemButton(
-				e => this._handleButtonClick(quickPick, e))
+				e => this._handleButtonClick(quickPick, e, options))
 			);
 
 			// when the dialog is hidden, dispose everything
@@ -262,19 +243,31 @@ export class PromptFilePickers {
 		});
 	}
 
-	private _createPromptPickItems(options: ISelectOptions): WithUriValue<IQuickPickItem>[] {
-		const { promptFiles, resource } = options;
+
+	private async _createPromptPickItems(options: ISelectOptions): Promise<IPromptPickerQuickPickItem[]> {
+		const { resource } = options;
+		const buttons: IQuickInputButton[] = [];
+		if (options.optionEdit !== false) {
+			buttons.push(EDIT_BUTTON);
+		}
+		if (options.optionRename !== false) {
+			buttons.push(RENAME_BUTTON);
+		}
+		if (options.optionDelete !== false) {
+			buttons.push(DELETE_BUTTON);
+		}
+		const promptFiles = await this._promptsService.listPromptFiles(PromptsType.prompt, CancellationToken.None);
 
 		const fileOptions = promptFiles.map((promptFile) => {
-			return this._createPromptPickItem(promptFile);
+			return this._createPromptPickItem(promptFile, buttons);
 		});
 
 		// if a resource is provided, create an `activeItem` for it to pre-select
 		// it in the UI, and sort the list so the active item appears at the top
 		let activeItem: WithUriValue<IQuickPickItem> | undefined;
-		if (resource) {
+		if (options.resource) {
 			activeItem = fileOptions.find((file) => {
-				return extUri.isEqual(file.value, resource);
+				return extUri.isEqual(file.value, options.resource);
 			});
 
 			// if no item for the `resource` was found, it means that the resource is not
@@ -283,12 +276,12 @@ export class PromptFilePickers {
 			// even if it is not included in the prompts list otherwise(from location setting)
 			if (!activeItem) {
 				activeItem = this._createPromptPickItem({
-					uri: resource,
+					uri: options.resource,
 					// "user" prompts are always registered in the prompts list, hence it
 					// should be safe to assume that `resource` is not "user" prompt here
 					storage: 'local',
-					type: 'instructions',
-				});
+					type: options.type,
+				}, buttons);
 				fileOptions.push(activeItem);
 			}
 
@@ -304,20 +297,35 @@ export class PromptFilePickers {
 				return 0;
 			});
 		}
+
+		const newItem = options.optionNew !== false ? this._getNewItem(options.type) : undefined;
+		if (newItem) {
+			fileOptions.splice(0, 0, newItem);
+		}
 		return fileOptions;
 	}
 
-	private _createPromptPickItem(promptFile: IPromptPath): WithUriValue<IQuickPickItem> {
+	private _getNewItem(type: PromptsType): IPromptPickerQuickPickItem {
+		switch (type) {
+			case PromptsType.prompt:
+				return NEW_PROMPT_FILE_OPTION;
+			case PromptsType.instructions:
+				return NEW_INSTRUCTIONS_FILE_OPTION;
+			case PromptsType.mode:
+				return NEW_MODE_FILE_OPTION;
+			default:
+				throw new Error(`Unknown prompt type '${type}'.`);
+		}
+	}
+
+	private _createPromptPickItem(promptFile: IPromptPath, buttons: IQuickInputButton[]): WithUriValue<IQuickPickItem> {
 		const { uri, storage } = promptFile;
 		const fileWithoutExtension = getCleanPromptName(uri);
 
 		// if a "user" prompt, don't show its filesystem path in
 		// the user interface, but do that for all the "local" ones
 		const description = (storage === 'user')
-			? localize(
-				'user-prompt.capitalized',
-				'User prompt',
-			)
+			? localize('user-data-dir.capitalized', 'User data folder')
 			: this._labelService.getUriLabel(dirname(uri), { relative: true });
 
 		const tooltip = (storage === 'user')
@@ -331,17 +339,35 @@ export class PromptFilePickers {
 			description,
 			tooltip,
 			value: uri,
-			buttons: [EDIT_BUTTON, DELETE_BUTTON],
+			buttons
 		};
 	}
 
-	private async _handleButtonClick(quickPick: IQuickPick<WithUriValue<IQuickPickItem>>, context: IQuickPickItemButtonEvent<WithUriValue<IQuickPickItem>>) {
+	private async _handleButtonClick(quickPick: IQuickPick<WithUriValue<IQuickPickItem>>, context: IQuickPickItemButtonEvent<WithUriValue<IQuickPickItem>>, options: ISelectOptions): Promise<void> {
 		const { item, button } = context;
-		const { value } = item;
+		const { value, } = item;
 
 		// `edit` button was pressed, open the prompt file in editor
 		if (button === EDIT_BUTTON) {
-			return await this._openerService.open(value);
+			await this._openerService.open(value);
+			return;
+		}
+
+		// `rename` button was pressed, open a rename dialog
+		if (button === RENAME_BUTTON) {
+			// don't close the main prompt selection dialog by the confirmation dialog
+			const previousIgnoreFocusOut = quickPick.ignoreFocusOut;
+			quickPick.ignoreFocusOut = true;
+
+			const currentFolder = dirname(value);
+			const newName = await this._instaService.invokeFunction(askForPromptFileName, options.type, currentFolder);
+			if (newName) {
+				await this._fileService.move(value, joinPath(currentFolder, newName));
+			}
+
+			quickPick.ignoreFocusOut = previousIgnoreFocusOut;
+			quickPick.items = await this._createPromptPickItems(options);
+			return;
 		}
 
 		// `delete` button was pressed, delete the prompt file
@@ -415,8 +441,13 @@ export class PromptFilePickers {
 			return;
 		}
 
+		if (button === HELP_BUTTON) {
+			// open the documentation
+			await this._openerService.open(item.value);
+			return;
+		}
+
 		throw new Error(`Unknown button '${JSON.stringify(button)}'.`);
 	}
 
 }
-
