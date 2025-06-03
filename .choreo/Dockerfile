@@ -23,6 +23,16 @@ RUN apt-get update && apt-get install -y \
 	lsof \
 	&& rm -rf /var/lib/apt/lists/*
 
+RUN mkdir -p /root/bal
+COPY .choreo/extension.bal /root/bal/extension.bal
+RUN cd /root/bal && \
+	bal build extension.bal && \
+	rm -r /root/bal
+RUN mkdir -p /home/.ballerina && \
+	cp -a /root/.ballerina /home/
+RUN chmod +x /home/.ballerina && \
+	chown -R 10500:10500 /home/.ballerina
+
 EXPOSE 8081
 USER 10500
 

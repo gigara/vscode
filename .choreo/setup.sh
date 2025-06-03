@@ -11,4 +11,7 @@ mkdir -p /home/chouser/project \
 mkdir -p /home/chouser/.vscode-server-devant/extensions
 cp -a /home/.vscode-server-devant/extensions/* /home/chouser/.vscode-server-devant/extensions/
 
+mkdir -p /home/chouser/.ballerina
+cp -a /home/.ballerina/ /home/chouser/
+
 exec /app/bin/code-server-devant --host 0.0.0.0 --port 8081 --default-folder /home/chouser/project --connection-token giga --disable-workspace-trust --extensions-dir /home/chouser/.vscode-server-devant/extensions/ --user-data-dir /tmp/vscode-data
