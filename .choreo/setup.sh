@@ -1,17 +1,9 @@
 #!/bin/bash
 set -e
 
-# Clone template project to workspace
-mkdir -p /home/chouser/project \
-    && git clone https://github.com/gigara/ballerina-integrator-empty-proj.git /tmp/ballerina-integrator-empty-proj \
-    && cp -a /tmp/ballerina-integrator-empty-proj/1.0.0/. /home/chouser/project/ \
-    && rm -rf /tmp/ballerina-integrator-empty-proj
+mkdir -p /tmp/chouser
+chmod -R 777 /tmp/chouser
 
-# Set up extensions directory symlink for the user
-mkdir -p /home/chouser/.vscode-server-devant/extensions
-cp -a /home/.vscode-server-devant/extensions/* /home/chouser/.vscode-server-devant/extensions/
+cp -r /home/chouser/. /tmp/chouser/
 
-mkdir -p /home/chouser/.ballerina
-cp -a /home/.ballerina/ /home/chouser/
-
-exec /app/bin/code-server-devant --host 0.0.0.0 --port 8081 --default-folder /home/chouser/project --connection-token giga --disable-workspace-trust --extensions-dir /home/chouser/.vscode-server-devant/extensions/ --user-data-dir /tmp/vscode-data
+exec /app/bin/code-server-devant --host 0.0.0.0 --port 8081 --default-folder /tmp/chouser/project --connection-token giga --disable-workspace-trust --extensions-dir /tmp/chouser/.vscode-server-devant/extensions/ --user-data-dir /tmp/chouser/vscode-data
