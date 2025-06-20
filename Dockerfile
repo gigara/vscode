@@ -1,4 +1,4 @@
-FROM node:20-slim
+FROM ubuntu:latest
 
 # Install deps
 RUN apt-get update && apt-get install -y \
