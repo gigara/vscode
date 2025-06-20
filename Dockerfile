@@ -1,4 +1,4 @@
-FROM ubuntu:latest
+FROM node:22-slim
 
 # Install deps
 RUN apt-get update && apt-get install -y \
