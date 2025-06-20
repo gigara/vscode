@@ -35,6 +35,7 @@ import { FileEditorInputSerializer, FileEditorWorkingCopyEditorHandler } from '.
 import { ModesRegistry } from '../../../../editor/common/languages/modesRegistry.js';
 import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
 import { TextFileEditor } from './editors/textFileEditor.js';
+import { LocalFilePersistenceContribution } from './localFilePersistence.js';
 
 class FileUriLabelContribution implements IWorkbenchContribution {
 
@@ -116,6 +117,9 @@ registerWorkbenchContribution2(WorkspaceWatcher.ID, WorkspaceWatcher, WorkbenchP
 
 // Register Dirty Files Indicator
 registerWorkbenchContribution2(DirtyFilesIndicator.ID, DirtyFilesIndicator, WorkbenchPhase.BlockStartup);
+
+// Register Local File Persistence (save+restore)
+registerWorkbenchContribution2(LocalFilePersistenceContribution.ID, LocalFilePersistenceContribution, WorkbenchPhase.BlockStartup);
 
 // Configuration
 const configurationRegistry = Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration);
