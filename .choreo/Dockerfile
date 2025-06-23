@@ -38,6 +38,8 @@ RUN git clone https://github.com/gigara/ballerina-integrator-empty-proj.git /hom
 
 RUN chown -R 10500:10500 /home/chouser  && \
 	chmod -R 777 /home/chouser
+
+RUN lsof -ti:8081 | xargs --no-run-if-empty kill -9 || true
 RUN sed -i 's/-Xms256m -Xmx2048m \\/-Xms256m -Xmx512m \\/g' /usr/lib/ballerina/distributions/ballerina-2201.12.3/bin/bal
 
 EXPOSE 8081
