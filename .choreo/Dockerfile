@@ -38,10 +38,9 @@ RUN git clone https://github.com/gigara/ballerina-integrator-empty-proj.git /hom
 
 RUN chown -R 10500:10500 /home/chouser  && \
 	chmod -R 777 /home/chouser
+RUN sed -i 's/-Xms256m -Xmx2048m \\/-Xms256m -Xmx512m \\/g' /usr/lib/ballerina/distributions/ballerina-2201.12.3/bin/bal
 
 EXPOSE 8081
 USER 10500
-
-# WORKDIR /tmp/chouser/project
 
 ENTRYPOINT ["/usr/local/bin/setup.sh"]
