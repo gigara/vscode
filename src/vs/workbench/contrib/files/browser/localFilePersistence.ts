@@ -13,7 +13,7 @@ import { URI } from '../../../../base/common/uri.js';
 export class LocalFilePersistenceContribution implements IWorkbenchContribution {
 	static readonly ID = 'workbench.contrib.localFilePersistence';
 
-	private readonly prefix = 'vscode.localfile.';
+	private readonly prefix = 'devantEditor.localfile.';
 	private readonly workspaceUris: URI[];
 
 	constructor(
@@ -24,7 +24,7 @@ export class LocalFilePersistenceContribution implements IWorkbenchContribution 
 		this.workspaceUris = this.workspaceContextService.getWorkspace().folders.map(f => f.uri);
 		this.restoreFilesFromLocalStorage();
 		this.subscribeToModelChanges();
-		this.subscribeToFileDeletions();
+		this.subscribeToFileOperations();
 	}
 
 	private isInWorkspace(uri: URI): boolean {
@@ -72,9 +72,24 @@ export class LocalFilePersistenceContribution implements IWorkbenchContribution 
 		});
 	}
 
-	private subscribeToFileDeletions() {
+	private subscribeToFileOperations() {
 		this.fileService.onDidRunOperation(e => {
-			if (e.operation === FileOperation.DELETE && this.isInWorkspace(e.resource)) {
+			if (e.operation === FileOperation.CREATE && this.isInWorkspace(e.resource)) {
+				localStorage.setItem(this.prefix + e.resource.toString(), '');
+			} else if (e.operation === FileOperation.MOVE && this.isInWorkspace(e.resource)) {
+				// Handle file move/rename: move localStorage entry from old path to new path
+				if (e.target) {
+					const oldKey = this.prefix + e.resource.toString();
+					const newKey = this.prefix + e.target.resource.toString();
+					const content = localStorage.getItem(oldKey);
+					if (content !== null) {
+						localStorage.removeItem(oldKey);
+						if (this.isInWorkspace(e.target.resource)) {
+							localStorage.setItem(newKey, content);
+						}
+					}
+				}
+			} else if (e.operation === FileOperation.DELETE && this.isInWorkspace(e.resource)) {
 				const key = this.prefix + e.resource.toString();
 				if (localStorage.getItem(key) !== null) {
 					localStorage.removeItem(key);
