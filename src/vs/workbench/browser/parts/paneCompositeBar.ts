@@ -582,6 +582,16 @@ export class PaneCompositeBar extends Disposable {
 			}
 		}
 
+		// sort composite items by order
+		newCompositeItems.sort((a, b) => {
+			const orderA = a.order ?? Number.MAX_VALUE;
+			const orderB = b.order ?? Number.MAX_VALUE;
+			if (orderA === orderB) {
+				return 0;
+			}
+			return orderA < orderB ? -1 : 1;
+		});
+
 		this.compositeBar.setCompositeBarItems(newCompositeItems);
 	}
 
