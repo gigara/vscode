@@ -41,6 +41,7 @@ RUN chown -R 10500:10500 /home/chouser  && \
 
 RUN lsof -ti:8081 | xargs --no-run-if-empty kill -9 || true
 RUN sed -i 's/-Xms256m -Xmx2048m \\/-Xms256m -Xmx512m \\/g' /usr/lib/ballerina/distributions/ballerina-2201.12.3/bin/bal
+RUN sed -i '/^\$JAVACMD \\\/a -Xms256m -Xmx512m \\' /usr/lib/ballerina/distributions/ballerina-2201.12.3/lib/tools/lang-server/launcher/language-server-launcher.sh
 
 EXPOSE 8081
 USER 10500
