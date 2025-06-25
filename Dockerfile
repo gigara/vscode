@@ -32,7 +32,7 @@ RUN cd source && \
 
 # Copy extensions
 RUN mkdir -p /root/.vscode-server-devant/extensions && \
-    cp -a source/.build/builtInExtensions/. /root/.vscode-server-devant/extensions
+    cp -a source/.build/extensions/. /root/.vscode-server-devant/extensions
 
 # Delete source
 RUN rm -rf source
