@@ -28,7 +28,7 @@ RUN cd source && \
     npm run compile-build && \
     npm run minify-vscode-reh-web && \
     npm run gulp vscode-reh-web-linux-x64-min-ci && \
-    npm run download-builtin-extensions
+    npm run extensions-ci
 
 # Copy extensions
 RUN mkdir -p /root/.vscode-server-devant/extensions && \
