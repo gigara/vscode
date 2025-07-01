@@ -1,4 +1,4 @@
-FROM node:22-slim
+FROM mcr.microsoft.com/devcontainers/javascript-node
 
 # Install deps
 RUN apt-get update && apt-get install -y \
