@@ -27,11 +27,12 @@ RUN set -eux; \
     mkdir -p /tmp/vsix; \
     for i in $(seq 0 $((COUNT-1))); do \
         NAME=$(echo "$ASSETS" | jq -r ".[$i].name"); \
+        BASENAME="$(basename "$NAME" | rev | cut -d. -f2- | rev)"; \
         URL=$(echo "$ASSETS" | jq -r ".[$i].browser_download_url"); \
         if echo "$NAME" | grep -qE '\.vsix$'; then \
             echo "Downloading $NAME from $URL"; \
             curl -L -H "Accept: application/octet-stream" "$URL" -o "/tmp/vsix/$NAME"; \
-            EXT_DIR="/home/chouser/.vscode-server-devant/extensions/${NAME%}"; \
+            EXT_DIR="/home/chouser/.vscode-server-devant/extensions/${BASENAME%}"; \
             if [ -d "$EXT_DIR" ]; then rm -rf "$EXT_DIR"; fi; \
             mkdir -p "$EXT_DIR"; \
             unzip -q "/tmp/vsix/$NAME" -d /tmp/vsix/extract_tmp; \
