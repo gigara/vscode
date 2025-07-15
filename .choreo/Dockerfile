@@ -1,4 +1,4 @@
-FROM gigara/devant-editor
+FROM docker.wso2.com/wso2/integration-web-editor:1.0.0
 
 # Ensure the Devant user has proper permissions
 RUN groupadd -g 10500 chouser || true && \
