@@ -1,4 +1,4 @@
-FROM node:20-slim
+FROM mcr.microsoft.com/devcontainers/typescript-node:20-bookworm
 
 # Install deps
 RUN apt-get update && apt-get install -y \
@@ -19,40 +19,29 @@ WORKDIR /app
 # Copy source
 COPY . source/
 
-# Install dependencies
+# Install dependencies & build
 RUN cd source && \
-    npm ci
-
-# Build the project
-RUN cd source && \
+    npm ci && \
     npm run compile-build && \
     npm run minify-vscode-reh-web && \
     npm run gulp vscode-reh-web-linux-x64-min-ci && \
-    npm run download-builtin-extensions
+    npm run extensions-ci
 
-# Copy extensions
+# Copy extensions & move the built output to the working directory
 RUN mkdir -p /root/.vscode-server-devant/extensions && \
-    cp -a source/.build/builtInExtensions/. /root/.vscode-server-devant/extensions
+    cp -a source/.build/extensions/. /root/.vscode-server-devant/extensions && \
+    cp -a vscode-reh-web-linux-x64/. . && \
+    rm -r vscode-reh-web-linux-x64 && \
+    rm -rf source
 
-# Delete source
-RUN rm -rf source
-
-# move the built output to the working directory
-RUN cp -a vscode-reh-web-linux-x64/. . && \
-    rm -r vscode-reh-web-linux-x64
-
-# Download Ballerina
-RUN curl -o /tmp/ballerina-2201.12.3-swan-lake-linux-x64.deb https://dist.ballerina.io/downloads/2201.12.3/ballerina-2201.12.3-swan-lake-linux-x64.deb
-
-# Install Ballerina
-RUN dpkg -i /tmp/ballerina-2201.12.3-swan-lake-linux-x64.deb \
-    && rm /tmp/ballerina-2201.12.3-swan-lake-linux-x64.deb
-
-# Download and setup Java
-RUN mkdir -p /opt/java \
-    && curl -L -o /tmp/OpenJDK21U-jdk_x64_linux_hotspot_21.0.5_11.tar.gz "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.5%2B11/OpenJDK21U-jdk_x64_linux_hotspot_21.0.5_11.tar.gz" \
-    && tar -xvzf /tmp/OpenJDK21U-jdk_x64_linux_hotspot_21.0.5_11.tar.gz -C /opt/java \
-    && rm /tmp/OpenJDK21U-jdk_x64_linux_hotspot_21.0.5_11.tar.gz
+# Download & install Ballerina & Java
+RUN curl -o /tmp/ballerina-2201.12.3-swan-lake-linux-x64.deb https://dist.ballerina.io/downloads/2201.12.3/ballerina-2201.12.3-swan-lake-linux-x64.deb && \
+    dpkg -i /tmp/ballerina-2201.12.3-swan-lake-linux-x64.deb && \
+    rm /tmp/ballerina-2201.12.3-swan-lake-linux-x64.deb && \
+    mkdir -p /opt/java && \
+    curl -L -o /tmp/OpenJDK21U-jdk_x64_linux_hotspot_21.0.5_11.tar.gz "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.5%2B11/OpenJDK21U-jdk_x64_linux_hotspot_21.0.5_11.tar.gz" && \
+    tar -xvzf /tmp/OpenJDK21U-jdk_x64_linux_hotspot_21.0.5_11.tar.gz -C /opt/java && \
+    rm /tmp/OpenJDK21U-jdk_x64_linux_hotspot_21.0.5_11.tar.gz
 
 # Set up environment variables for Java
 ENV JAVA_HOME=/opt/java/jdk-21.0.5+11
