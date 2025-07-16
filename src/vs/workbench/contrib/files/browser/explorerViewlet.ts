@@ -262,7 +262,7 @@ export const VIEW_CONTAINER: ViewContainer = viewContainerRegistry.registerViewC
 	icon: explorerViewIcon,
 	alwaysUseContainerInfo: true,
 	hideIfEmpty: true,
-	order: 0,
+	order: 10,
 	openCommandActionDescriptor: {
 		id: VIEWLET_ID,
 		title: localize2('explore', "Explorer"),
@@ -270,7 +270,7 @@ export const VIEW_CONTAINER: ViewContainer = viewContainerRegistry.registerViewC
 		keybindings: { primary: KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.KeyE },
 		order: 0
 	},
-}, ViewContainerLocation.AuxiliaryBar, { isDefault: false });
+}, ViewContainerLocation.Sidebar, { isDefault: false });
 
 const openFolder = localize('openFolder', "Open Folder");
 const addAFolder = localize('addAFolder', "add a folder");

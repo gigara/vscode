@@ -110,6 +110,7 @@ export class PaneCompositeBar extends Disposable {
 		@IWorkbenchLayoutService protected readonly layoutService: IWorkbenchLayoutService,
 	) {
 		super();
+
 		this.location = paneCompositePart.partId === Parts.PANEL_PART
 			? ViewContainerLocation.Panel : paneCompositePart.partId === Parts.AUXILIARYBAR_PART
 				? ViewContainerLocation.AuxiliaryBar : ViewContainerLocation.Sidebar;
@@ -219,6 +220,7 @@ export class PaneCompositeBar extends Disposable {
 	}
 
 	private registerListeners(): void {
+
 		// View Container Changes
 		this._register(this.viewDescriptorService.onDidChangeViewContainers(({ added, removed }) => this.onDidChangeViewContainers(added, removed)));
 		this._register(this.viewDescriptorService.onDidChangeContainerLocation(({ viewContainer, from, to }) => this.onDidChangeViewContainerLocation(viewContainer, from, to)));
@@ -581,6 +583,16 @@ export class PaneCompositeBar extends Disposable {
 				}
 			}
 		}
+
+		// sort composite items by order
+		newCompositeItems.sort((a, b) => {
+			const orderA = a.order ?? Number.MAX_VALUE;
+			const orderB = b.order ?? Number.MAX_VALUE;
+			if (orderA === orderB) {
+				return 0;
+			}
+			return orderA < orderB ? -1 : 1;
+		});
 
 		this.compositeBar.setCompositeBarItems(newCompositeItems);
 	}

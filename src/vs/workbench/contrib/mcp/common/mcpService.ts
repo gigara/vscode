@@ -11,14 +11,15 @@ import { markdownCommandLink, MarkdownString } from '../../../../base/common/htm
 import { Disposable, DisposableStore, IReference, toDisposable } from '../../../../base/common/lifecycle.js';
 import { equals } from '../../../../base/common/objects.js';
 import { autorun, IObservable, observableValue, transaction } from '../../../../base/common/observable.js';
+import { basename } from '../../../../base/common/resources.js';
 import { URI } from '../../../../base/common/uri.js';
 import { localize } from '../../../../nls.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
 import { IProductService } from '../../../../platform/product/common/productService.js';
 import { StorageScope } from '../../../../platform/storage/common/storage.js';
-import { getAttachableImageExtension } from '../../chat/common/chatModel.js';
-import { CountTokensCallback, ILanguageModelToolsService, IPreparedToolInvocation, IToolData, IToolImpl, IToolInvocation, IToolResult, IToolResultInputOutputDetails, ToolProgress } from '../../chat/common/languageModelToolsService.js';
+import { ChatResponseResource, getAttachableImageExtension } from '../../chat/common/chatModel.js';
+import { CountTokensCallback, ILanguageModelToolsService, IPreparedToolInvocation, IToolData, IToolImpl, IToolInvocation, IToolInvocationPreparationContext, IToolResult, IToolResultInputOutputDetails, ToolDataSource, ToolProgress, ToolSet } from '../../chat/common/languageModelToolsService.js';
 import { McpCommandIds } from './mcpCommandIds.js';
 import { IMcpRegistry } from './mcpRegistryTypes.js';
 import { McpServer, McpServerMetadataCache } from './mcpServer.js';
@@ -91,7 +92,7 @@ export class McpService extends Disposable implements IMcpService {
 		await Promise.all(todo);
 	}
 
-	private _syncTools(server: McpServer, store: DisposableStore) {
+	private _syncTools(server: McpServer, toolSet: ToolSet, source: ToolDataSource, store: DisposableStore) {
 		const tools = new Map</* tool ID */string, ISyncedToolData>();
 
 		store.add(autorun(reader => {
@@ -103,6 +104,7 @@ export class McpService extends Disposable implements IMcpService {
 			const registerTool = (tool: IMcpTool, toolData: IToolData, store: DisposableStore) => {
 				store.add(this._toolsService.registerToolData(toolData));
 				store.add(this._toolsService.registerToolImplementation(tool.id, this._instantiationService.createInstance(McpToolImplementation, tool, server)));
+				store.add(toolSet.addTool(toolData));
 			};
 
 			for (const tool of server.tools.read(reader)) {
@@ -110,10 +112,11 @@ export class McpService extends Disposable implements IMcpService {
 				const collection = this._mcpRegistry.collections.get().find(c => c.id === server.collection.id);
 				const toolData: IToolData = {
 					id: tool.id,
-					source: { type: 'mcp', label: server.definition.label, collectionId: server.collection.id, definitionId: server.definition.id },
+					source,
 					icon: Codicon.tools,
-					displayName: tool.definition.annotations?.title || tool.definition.name,
-					toolReferenceName: tool.id,
+					// duplicative: https://github.com/modelcontextprotocol/modelcontextprotocol/pull/813
+					displayName: tool.definition.annotations?.title || tool.definition.title || tool.definition.name,
+					toolReferenceName: tool.referenceName,
 					modelDescription: tool.definition.description ?? '',
 					userDescription: tool.definition.description ?? '',
 					inputSchema: tool.definition.inputSchema,
@@ -205,8 +208,18 @@ export class McpService extends Disposable implements IMcpService {
 				def.toolPrefix,
 			);
 
+			const source: ToolDataSource = { type: 'mcp', label: object.definition.label, collectionId: object.collection.id, definitionId: object.definition.id };
+			const toolSet = this._toolsService.createToolSet(
+				source,
+				def.serverDefinition.id, def.serverDefinition.label,
+				{
+					icon: Codicon.mcp,
+					description: localize('mcp.toolset', "{0}: All Tools", def.serverDefinition.label)
+				}
+			);
+			store.add(toolSet);
 			store.add(object);
-			this._syncTools(object, store);
+			this._syncTools(object, toolSet, source, store);
 
 			nextServers.push({ object, dispose: () => store.dispose(), toolPrefix: def.toolPrefix });
 		}
@@ -233,25 +246,26 @@ class McpToolImplementation implements IToolImpl {
 		@IProductService private readonly _productService: IProductService,
 	) { }
 
-	async prepareToolInvocation(parameters: any): Promise<IPreparedToolInvocation> {
+	async prepareToolInvocation(context: IToolInvocationPreparationContext): Promise<IPreparedToolInvocation> {
 		const tool = this._tool;
 		const server = this._server;
 
 		const mcpToolWarning = localize(
 			'mcp.tool.warning',
-			"{0} Note that MCP servers or malicious conversation content may attempt to misuse '{1}' through tools.",
-			'$(info)',
+			"Note that MCP servers or malicious conversation content may attempt to misuse '{0}' through tools.",
 			this._productService.nameShort
 		);
 
 		const needsConfirmation = !tool.definition.annotations?.readOnlyHint;
-		const title = tool.definition.annotations?.title || ('`' + tool.definition.name + '`');
+		// duplicative: https://github.com/modelcontextprotocol/modelcontextprotocol/pull/813
+		const title = tool.definition.annotations?.title || tool.definition.title || ('`' + tool.definition.name + '`');
 		const subtitle = localize('msg.subtitle', "{0} (MCP Server)", server.definition.label);
 
 		return {
 			confirmationMessages: needsConfirmation ? {
 				title: new MarkdownString(localize('msg.title', "Run {0}", title)),
-				message: new MarkdownString(localize('msg.msg', "{0}\n\n {1}", tool.definition.description, mcpToolWarning), { supportThemeIcons: true }),
+				message: new MarkdownString(tool.definition.description, { supportThemeIcons: true }),
+				disclaimer: mcpToolWarning,
 				allowAutoConfirm: true,
 			} : undefined,
 			invocationMessage: new MarkdownString(localize('msg.run', "Running {0}", title)),
@@ -263,7 +277,7 @@ class McpToolImplementation implements IToolImpl {
 			}), { isTrusted: true }),
 			toolSpecificData: {
 				kind: 'input',
-				rawInput: parameters
+				rawInput: context.parameters
 			}
 		};
 	}
@@ -274,7 +288,7 @@ class McpToolImplementation implements IToolImpl {
 			content: []
 		};
 
-		const callResult = await this._tool.callWithProgress(invocation.parameters as Record<string, any>, progress, token);
+		const callResult = await this._tool.callWithProgress(invocation.parameters as Record<string, any>, progress, { chatRequestId: invocation.chatRequestId, chatSessionId: invocation.context?.sessionId }, token);
 		const details: IToolResultInputOutputDetails = {
 			input: JSON.stringify(invocation.parameters, undefined, 2),
 			output: [],
@@ -290,19 +304,19 @@ class McpToolImplementation implements IToolImpl {
 			}
 
 			// Rewrite image rsources to images so they are inlined nicely
-			const addAsInlineData = (mimeType: string, value64: string, uri?: URI) => {
-				details.output.push({ type: 'data', mimeType, value64, uri });
+			const addAsInlineData = (mimeType: string, value: string, uri?: URI) => {
+				details.output.push({ mimeType, value, uri });
 				if (isForModel) {
 					result.content.push({
 						kind: 'data',
-						value: { mimeType, data: decodeBase64(value64) }
+						value: { mimeType, data: decodeBase64(value) }
 					});
 				}
 			};
 
 			const isForModel = audience.includes('assistant');
 			if (item.type === 'text') {
-				details.output.push({ type: 'text', value: item.text });
+				details.output.push({ isText: true, value: item.text });
 				if (isForModel) {
 					result.content.push({
 						kind: 'text',
@@ -310,17 +324,29 @@ class McpToolImplementation implements IToolImpl {
 					});
 				}
 			} else if (item.type === 'image' || item.type === 'audio') {
-				addAsInlineData(item.mimeType, item.data);
+				// default to some image type if not given to hint
+				addAsInlineData(item.mimeType || 'image/png', item.data);
+			} else if (item.type === 'resource_link') {
+				// todo@connor4312 look at what we did before #250329 and use that here
 			} else if (item.type === 'resource') {
 				const uri = McpResourceURI.fromServer(this._server.definition, item.resource.uri);
 				if (item.resource.mimeType && getAttachableImageExtension(item.resource.mimeType) && 'blob' in item.resource) {
 					addAsInlineData(item.resource.mimeType, item.resource.blob, uri);
 				} else {
-					details.output.push({ type: 'resource', uri });
+					details.output.push({
+						uri,
+						isText: 'text' in item.resource,
+						mimeType: item.resource.mimeType,
+						value: 'blob' in item.resource ? item.resource.blob : item.resource.text,
+						asResource: true,
+					});
+
 					if (isForModel) {
+						const permalink = invocation.chatRequestId && invocation.context && ChatResponseResource.createUri(invocation.context.sessionId, invocation.chatRequestId, invocation.callId, result.content.length, basename(uri));
+
 						result.content.push({
 							kind: 'text',
-							value: 'text' in item.resource ? item.resource.text : `The tool returns a resource which can be read from the URI ${uri}`,
+							value: 'text' in item.resource ? item.resource.text : `The tool returns a resource which can be read from the URI ${permalink || uri}`,
 						});
 					}
 				}
