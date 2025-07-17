@@ -28,9 +28,6 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Set Node.js heap size to 32GB
-        run: echo "NODE_OPTIONS=--max-old-space-size=32768" >> $GITHUB_ENV
-
       - name: Build Docker image
         uses: docker/build-push-action@v5
         with:
@@ -41,6 +38,8 @@ jobs:
           cache-to: type=gha,mode=max
           outputs: type=docker,dest=${{ runner.temp }}/devant-editor.tar
           push: true
+        env:
+          NODE_OPTIONS: "--max-old-space-size=32768"
 
       - name: Upload Docker image
         uses: actions/upload-artifact@v4
