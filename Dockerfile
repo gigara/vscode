@@ -37,15 +37,7 @@ RUN mkdir -p /root/.vscode-server-devant/extensions && \
 # Download & install Ballerina & Java
 RUN curl -o /tmp/ballerina-2201.12.3-swan-lake-linux-x64.deb https://dist.ballerina.io/downloads/2201.12.3/ballerina-2201.12.3-swan-lake-linux-x64.deb && \
     dpkg -i /tmp/ballerina-2201.12.3-swan-lake-linux-x64.deb && \
-    rm /tmp/ballerina-2201.12.3-swan-lake-linux-x64.deb && \
-    mkdir -p /opt/java && \
-    curl -L -o /tmp/OpenJDK21U-jdk_x64_linux_hotspot_21.0.5_11.tar.gz "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.5%2B11/OpenJDK21U-jdk_x64_linux_hotspot_21.0.5_11.tar.gz" && \
-    tar -xvzf /tmp/OpenJDK21U-jdk_x64_linux_hotspot_21.0.5_11.tar.gz -C /opt/java && \
-    rm /tmp/OpenJDK21U-jdk_x64_linux_hotspot_21.0.5_11.tar.gz
-
-# Set up environment variables for Java
-ENV JAVA_HOME=/opt/java/jdk-21.0.5+11
-ENV PATH=$JAVA_HOME/bin:$PATH
+    rm /tmp/ballerina-2201.12.3-swan-lake-linux-x64.deb
 
 # Create a sample project with Ballerina
 RUN mkdir -p /opt/project-template \
