@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/devcontainers/typescript-node:22-bookworm
+FROM mcr.microsoft.com/devcontainers/typescript-node:22-bookworm as builder
 
 # Install deps
 RUN apt-get update && apt-get install -y \
@@ -31,19 +31,23 @@ RUN cd source && \
 RUN mkdir -p /root/.vscode-server-devant/extensions && \
     cp -a source/.build/extensions/. /root/.vscode-server-devant/extensions && \
     cp -a vscode-reh-web-linux-x64/. . && \
-    rm -r vscode-reh-web-linux-x64 && \
-    rm -rf source
+    rm -r vscode-reh-web-linux-x64
+
+# Create a sample project with Ballerina
+RUN mkdir -p /opt/project-template \
+    && git clone https://github.com/gigara/ballerina-integrator-empty-proj.git /tmp/ballerina-integrator-empty-proj \
+    && cp -a /tmp/ballerina-integrator-empty-proj/1.0.0/. /opt/project-template/
+
+FROM mcr.microsoft.com/devcontainers/typescript-node:22-bookworm
+
+COPY --from=builder /app/bin /app/bin
+COPY --from=builder /root/.vscode-server-devant /root/.vscode-server-devant
+COPY --from=builder /opt/project-template /opt/project-template
 
 # Download & install Ballerina & Java
 RUN curl -o /tmp/ballerina-2201.12.3-swan-lake-linux-x64.deb https://dist.ballerina.io/downloads/2201.12.3/ballerina-2201.12.3-swan-lake-linux-x64.deb && \
     dpkg -i /tmp/ballerina-2201.12.3-swan-lake-linux-x64.deb && \
     rm /tmp/ballerina-2201.12.3-swan-lake-linux-x64.deb
-
-# Create a sample project with Ballerina
-RUN mkdir -p /opt/project-template \
-    && git clone https://github.com/gigara/ballerina-integrator-empty-proj.git /tmp/ballerina-integrator-empty-proj \
-    && cp -a /tmp/ballerina-integrator-empty-proj/1.0.0/. /opt/project-template/ \
-    && rm -rf /tmp/ballerina-integrator-empty-proj
 
 # Expose the port the code server will run on
 EXPOSE 8081
