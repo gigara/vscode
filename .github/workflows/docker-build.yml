@@ -7,6 +7,10 @@ on:
         description: 'Docker registry to use'
         required: true
         default: digiopsacr.azurecr.io
+      platforms:
+        description: 'Docker platforms to build for'
+        required: true
+        default: linux/amd64,linux/arm64
 
 jobs:
   build:
@@ -37,6 +41,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           outputs: type=docker,dest=${{ runner.temp }}/devant-editor.tar
+          platforms: ${{ github.event.inputs.platforms }}
           push: true
         env:
           NODE_OPTIONS: "--max-old-space-size=32768"
