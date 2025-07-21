@@ -7,6 +7,10 @@ on:
         description: 'Docker registry to use'
         required: true
         default: digiopsacr.azurecr.io
+      namespace:
+        description: 'Docker namespace to use'
+        required: true
+        default: wso2
       platforms:
         description: 'Docker platforms to build for'
         required: true
@@ -37,7 +41,7 @@ jobs:
         with:
           context: .
           file: Dockerfile
-          tags: ${{ github.event.inputs.registry }}/integration-web-editor:latest,${{ github.event.inputs.registry }}/integration-web-editor:1.0.0
+          tags: ${{ github.event.inputs.namespace }}/integration-web-editor:latest,${{ github.event.inputs.namespace }}/integration-web-editor:1.0.0
           cache-from: type=gha
           cache-to: type=gha,mode=max
           outputs: type=docker,dest=${{ runner.temp }}/devant-editor.tar
