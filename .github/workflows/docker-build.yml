@@ -3,6 +3,12 @@ name: Build and Package
 on:
   workflow_dispatch:
     inputs:
+      runner:
+        type: choice
+        description: 'Runner to use'
+        options:
+        - 'Runner_integration-web-editor'
+        - 'ubuntu-latest'
       registry:
         description: 'Docker registry to use'
         required: true
@@ -18,7 +24,7 @@ on:
 
 jobs:
   build:
-    runs-on: Runner_integration-web-editor
+    runs-on: ${{ github.event.inputs.runner }}
     permissions:
       contents: read
 
