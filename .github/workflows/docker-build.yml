@@ -50,7 +50,7 @@ jobs:
           tags: ${{ github.event.inputs.namespace }}/integration-web-editor:latest,${{ github.event.inputs.namespace }}/integration-web-editor:1.0.0
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          outputs: type=docker,dest=${{ runner.temp }}/devant-editor.tar
+          outputs: type=image,dest=${{ runner.temp }}/devant-editor.tar
           platforms: ${{ github.event.inputs.platforms }}
           push: true
         env:
