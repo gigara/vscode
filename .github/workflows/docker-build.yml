@@ -84,6 +84,10 @@ jobs:
         env:
           NODE_OPTIONS: "--max-old-space-size=32768"
 
+      - name: Save Docker image to tar
+        run: |
+          docker save integration-web-editor:latest -o ${{ runner.temp }}/devant-editor.tar
+
       - name: Upload Docker image
         uses: actions/upload-artifact@v4
         with:
