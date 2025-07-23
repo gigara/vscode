@@ -17,10 +17,6 @@ on:
         description: 'Docker namespace to use'
         required: true
         default: wso2
-      platforms:
-        description: 'Docker platforms to build for'
-        required: true
-        default: linux/amd64
 
 jobs:
   build:
@@ -78,15 +74,10 @@ jobs:
           tags: ${{ github.event.inputs.namespace }}/integration-web-editor:latest,${{ github.event.inputs.namespace }}/integration-web-editor:1.0.1
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          outputs: type=image,dest=${{ runner.temp }}/devant-editor.tar
-          platforms: ${{ github.event.inputs.platforms }}
+          outputs: type=docker,dest=${{ runner.temp }}/devant-editor.tar
           push: true
         env:
           NODE_OPTIONS: "--max-old-space-size=32768"
-
-      - name: Save Docker image to tar
-        run: |
-          docker save integration-web-editor:latest -o ${{ runner.temp }}/devant-editor.tar
 
       - name: Upload Docker image
         uses: actions/upload-artifact@v4
