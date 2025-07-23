@@ -613,4 +613,5 @@ function readCookie(name: string): string | undefined {
 			? undefined /* with a remote without embedder-preferred storage, store on the remote */
 			: new LocalStorageSecretStorageProvider(secretStorageCrypto),
 	});
+	mainWindow.document.body.removeChild(document.getElementById('vscode-loader')!);
 })();
