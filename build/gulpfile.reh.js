@@ -350,7 +350,8 @@ function packageTask(type, platform, arch, sourceFolderName, destinationFolderNa
 				'resources/server/favicon.ico',
 				'resources/server/code-192.png',
 				'resources/server/code-512.png',
-				'resources/server/manifest.json'
+				'resources/server/manifest.json',
+				'resources/server/loader.gif'
 			].map(resource => gulp.src(resource, { base: '.' }).pipe(rename(resource)));
 		}
 
