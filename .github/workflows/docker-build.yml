@@ -71,7 +71,7 @@ jobs:
         with:
           context: .
           file: Dockerfile
-          tags: ${{ github.event.inputs.namespace }}/integration-web-editor:latest,${{ github.event.inputs.namespace }}/integration-web-editor:1.0.2
+          tags: ${{ github.event.inputs.namespace }}/integration-web-editor:latest,${{ github.event.inputs.namespace }}/integration-web-editor:1.0.3
           cache-from: type=gha
           cache-to: type=gha,mode=max
           outputs: type=docker,dest=${{ runner.temp }}/devant-editor.tar
