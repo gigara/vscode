@@ -1,4 +1,4 @@
-FROM docker.wso2.com/wso2/integration-web-editor:1.0.0
+FROM gigara/integration-web-editor:latest
 
 # Ensure the Devant user has proper permissions
 RUN groupadd -g 10500 chouser || true && \
@@ -7,7 +7,6 @@ RUN groupadd -g 10500 chouser || true && \
 
 COPY .choreo/setup.sh /usr/local/bin/setup.sh
 
-# Ensure the setup script has correct line endings and is executable
 RUN sed -i 's/\r$//' /usr/local/bin/setup.sh && \
 chmod +x /usr/local/bin/setup.sh && \
 chown 10500:10500 /usr/local/bin/setup.sh
@@ -18,7 +17,7 @@ RUN mkdir -p /home/chouser/.vscode-server-devant/extensions && \
 
 # Download all VSIX artifacts from the release with name "code-server-release" in the Ballerina VSCode repo and extract them
 RUN set -eux; \
-    GH_API="https://api.github.com/repos/wso2/ballerina-vscode/releases"; \
+    GH_API="https://api.github.com/repos/wso2/ballerina-vscode/releases?per_page=50"; \
     RELEASE_ID=$(curl -s $GH_API | jq -r '.[] | select(.name == "code-server-release") | .id' | head -n1); \
     if [ -z "$RELEASE_ID" ]; then echo "Release 'code-server-release' not found!"; exit 0; fi; \
     ASSETS=$(curl -s "https://api.github.com/repos/wso2/ballerina-vscode/releases/$RELEASE_ID/assets"); \
@@ -42,8 +41,13 @@ RUN set -eux; \
     done; \
     rm -rf /tmp/vsix
 
+# Download & install Ballerina & Java
+RUN curl -o /tmp/ballerina-2201.12.3-swan-lake-linux-x64.deb https://dist.ballerina.io/downloads/2201.12.3/ballerina-2201.12.3-swan-lake-linux-x64.deb && \
+    dpkg -i /tmp/ballerina-2201.12.3-swan-lake-linux-x64.deb && \
+    rm /tmp/ballerina-2201.12.3-swan-lake-linux-x64.deb
+
 # update Bal
-RUN bal dist update
+RUN bal dist update && bal dist use 2201.12.7
 
 # install dependencies
 RUN apt-get update && apt-get install -y \
@@ -60,15 +64,11 @@ RUN cd /root/bal && \
 RUN mkdir -p /home/chouser/.ballerina && \
 	cp -r /root/.ballerina/. /home/chouser/.ballerina/
 
-RUN git clone https://github.com/gigara/ballerina-integrator-empty-proj.git /home/ballerina-integrator-empty-proj && \
-	mkdir -p /home/chouser/project && \
-	cp -r /home/ballerina-integrator-empty-proj/1.0.0/. /home/chouser/project/ && \
-	rm -rf /home/ballerina-integrator-empty-proj
-
 RUN chown -R 10500:10500 /home/chouser  && \
 	chmod -R 777 /home/chouser
 
 EXPOSE 8081
 USER 10500
 
+ENV HOME=/tmp/chouser
 ENTRYPOINT ["/usr/local/bin/setup.sh"]
