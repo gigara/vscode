@@ -41,6 +41,4 @@ if [ -d "/mnt/platform-extension" ]; then
     ln -sf /mnt/platform-extension/* /tmp/chouser/.vscode-server-devant/extensions/wso2.wso2-platform
 fi
 
-WORKDIR /tmp/chouser/project/$GIT_SUB_PATH
-
-exec dumb-init /usr/bin/code-server --bind-addr 0.0.0.0:8080 --app-name "Devant Editor" --PASSWORD $CONNECTION_TOKEN --disable-workspace-trust --builtin-extensions-dir /tmp/chouser/.vscode-server-devant/extensions/ --user-data-dir /tmp/chouser/vscode-data /tmp/chouser/project/$GIT_SUB_PATH
+exec dumb-init /usr/bin/code-server --bind-addr 0.0.0.0:8081 --app-name "Devant Editor" --disable-workspace-trust --builtin-extensions-dir /tmp/chouser/.vscode-server-devant/extensions/ --user-data-dir /tmp/chouser/vscode-data /tmp/chouser/project/$GIT_SUB_PATH
