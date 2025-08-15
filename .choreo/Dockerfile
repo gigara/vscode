@@ -53,6 +53,7 @@ RUN bal dist update && bal dist use 2201.12.7
 RUN apt-get update && apt-get install -y \
 	procps \
 	lsof \
+    nginx \
 	&& rm -rf /var/lib/apt/lists/*
 
 # Bal cache
@@ -66,6 +67,18 @@ RUN mkdir -p /home/chouser/.ballerina && \
 
 RUN chown -R 10500:10500 /home/chouser  && \
 	chmod -R 777 /home/chouser
+
+    # Set up nginx directories with proper permissions
+RUN mkdir -p /tmp/client_temp /tmp/proxy_temp_path /tmp/fastcgi_temp /tmp/uwsgi_temp /tmp/scgi_temp && \
+    touch /tmp/nginx.pid && \
+    chown -R 10500:10500 /tmp && \
+    chmod -R 777 /tmp && \
+    chmod 666 /tmp/nginx.pid
+
+# Copy nginx configuration files to the standard location
+# They will be copied to /tmp at runtime
+COPY .choreo/nginx.conf /etc/nginx/nginx.conf
+COPY .choreo/mime.types /etc/nginx/mime.types
 
 EXPOSE 8081
 USER 10500
